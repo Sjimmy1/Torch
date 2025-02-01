@@ -1,0 +1,291 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="icon" type="image/png" href="favicon.png">
+<meta name="theme-color" content="#2b6dad">
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Torch - Share Knowledge</title>
+    <style>
+        :root {
+            --primary-color: #FF6B35;
+            --secondary-color: #004E89;
+            --background: #F8F9FA;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        body {
+            background: var(--background);
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 80px auto 0;
+            padding: 2rem;
+        }
+
+        .create-post-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: transform 0.2s;
+        }
+
+        .create-post-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .posts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .post-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+
+        .post-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .post-title {
+            color: var(--secondary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .post-content {
+            color: #666;
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+        }
+
+        .post-meta {
+            font-size: 0.8rem;
+            color: #999;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .post-actions {
+            margin-top: 1rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            cursor: pointer;
+            padding: 0.3rem 0.6rem;
+            border-radius: 5px;
+        }
+
+        .action-btn:hover {
+            background: rgba(255,107,53,0.1);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+        }
+
+        .modal textarea {
+            width: 100%;
+            height: 150px;
+            margin: 1rem 0;
+            padding: 1rem;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            resize: vertical;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 1rem;
+            }
+            
+            .posts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <a href="#" class="logo">Torch 🔦</a>
+        <button class="create-post-btn" onclick="showModal()">Ignite Knowledge</button>
+    </header>
+
+    <div class="main-container">
+        <div class="posts-grid" id="postsContainer">
+            <!-- Posts will be dynamically added here -->
+        </div>
+    </div>
+
+    <!-- Create Post Modal -->
+    <div class="modal" id="postModal">
+        <div class="modal-content">
+            <h2>Share Your Knowledge</h2>
+            <input type="text" id="postTitle" placeholder="Title your wisdom..." class="modal-input">
+            <textarea id="postContent" placeholder="Illuminate us with your knowledge..."></textarea>
+            <div style="text-align: right;">
+                <button class="action-btn" onclick="closeModal()">Cancel</button>
+                <button class="create-post-btn" onclick="createPost()">Post</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Store posts in localStorage
+        let posts = JSON.parse(localStorage.getItem('torch_posts')) || [];
+
+        // Initialize app
+        function init() {
+            renderPosts();
+        }
+
+        // Render all posts
+        function renderPosts() {
+            const container = document.getElementById('postsContainer');
+            container.innerHTML = '';
+
+            posts.forEach((post, index) => {
+                const postElement = document.createElement('div');
+                postElement.className = 'post-card';
+                postElement.innerHTML = `
+                    <h3 class="post-title">${post.title}</h3>
+                    <p class="post-content">${post.content}</p>
+                    <div class="post-meta">
+                        <span>${new Date(post.date).toLocaleDateString()}</span>
+                        <span>🔥 ${post.likes || 0}</span>
+                    </div>
+                    <div class="post-actions">
+                        <button class="action-btn" onclick="likePost(${index})">Like</button>
+                        <button class="action-btn" onclick="deletePost(${index})">Delete</button>
+                    </div>
+                `;
+                container.appendChild(postElement);
+            });
+        }
+
+        // Modal controls
+        function showModal() {
+            document.getElementById('postModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('postModal').style.display = 'none';
+        }
+
+        // Create new post
+        function createPost() {
+            const title = document.getElementById('postTitle').value;
+            const content = document.getElementById('postContent').value;
+
+            if (title && content) {
+                const newPost = {
+                    title,
+                    content,
+                    date: new Date().toISOString(),
+                    likes: 0
+                };
+
+                posts.unshift(newPost);
+                localStorage.setItem('torch_posts', JSON.stringify(posts));
+                renderPosts();
+                closeModal();
+                clearForm();
+            }
+        }
+
+        // Like post functionality
+        function likePost(index) {
+            posts[index].likes = (posts[index].likes || 0) + 1;
+            localStorage.setItem('torch_posts', JSON.stringify(posts));
+            renderPosts();
+        }
+
+        // Delete post functionality
+        function deletePost(index) {
+            if (confirm('Are you sure you want to delete this post?')) {
+                posts.splice(index, 1);
+                localStorage.setItem('torch_posts', JSON.stringify(posts));
+                renderPosts();
+            }
+        }
+
+        // Clear form fields
+        function clearForm() {
+            document.getElementById('postTitle').value = '';
+            document.getElementById('postContent').value = '';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            if (event.target === document.getElementById('postModal')) {
+                closeModal();
+            }
+        }
+
+        // Initialize the app
+        init();
+    </script>
+</body>
+</html>
